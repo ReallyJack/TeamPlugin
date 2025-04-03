@@ -25,8 +25,8 @@ public class SubTeam {
     }
 
     public void addMember(TeamMember member) {
-        removeTeamInviteExpired();
-        this.members.add(member);
+
+        members.add(member);
 
     }
 

@@ -45,47 +45,23 @@ public class Team {
         }
     }
 
-    public void addPlayerToTeam(String playerName, String teamName) {
+    public void addPlayerToTeam(String playerName) {
 
-            members.add(new TeamMember(playerName));
-
-    }
-
-    public void addPlayerToSubTeam(String playerName, SubTeam subTeam) {
-            TeamMember member = getTeamMember(playerName, this);
-            subTeam.addMember(member);
-
-    }
-
-    public void addToRogueTeam(TeamMember member) {
-
-    }
-
-    public void removeFromRogueTeam(TeamMember member) {
+        members.add(new TeamMember(playerName));
 
     }
 
     public void createSubTeam(String name, TeamMember member) {
 
-        SubTeam subTeam = new SubTeam(name);
-        subTeams.add(subTeam);
-        //subTeam.addMember(member);
-        System.out.println("sub team created!");
+        SubTeam newSubTeam = new SubTeam(name);
+        subTeams.add(newSubTeam);
+        newSubTeam.addMember(member);
     }
 
-    public void removeSubTeam(String name) {
-        for (SubTeam subTeam : getSubTeams()) {
-            if (subTeam.getName().equals(name)) {
-
-                getSubTeams().remove(subTeam);
-
-                System.out.println("subTeamRemoved");
-
-            } else {
-                System.out.println("No subteam with this name found!");
-            }
-        }
+    public void removeSubTeam(SubTeam subTeam) {
+        subTeams.remove(subTeam);
     }
+
 
     public String getName() {
         return name;
