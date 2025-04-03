@@ -37,7 +37,7 @@ public class Leave implements CommandExecutor {
             }
 
             if (subTeam.getSubTeamMembers().size() > 1) {
-                subTeam.removeMember("testuser");
+                subTeam.removeMember(member);
                 System.out.println("you have left the subteam " + subTeam.getName() + " size > 1");
             } else {
 

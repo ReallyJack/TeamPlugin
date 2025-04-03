@@ -54,7 +54,7 @@ public class Join implements CommandExecutor {
             if (currentSubTeam != null) {
 
                 if (currentSubTeam.getSubTeamMembers().size() > 1) {
-                    currentSubTeam.removeMember("testuser");
+                    currentSubTeam.removeMember(teamMember);
                     System.out.println("removed from " + currentSubTeam.getName() + " size > 1");
                 } else {
                     team.removeSubTeam(currentSubTeam);

@@ -30,15 +30,8 @@ public class SubTeam {
 
     }
 
-    public void removeMember(String name) {
-        for (TeamMember member : members) {
-            if (member.getName().equals(name)) {
-                members.remove(member);
-                return;
-            }
-
-            System.out.println("TeamMember not found in this subteam!");
-        }
+    public void removeMember(TeamMember member) {
+        members.remove(member);
     }
 
     public String getName() {
