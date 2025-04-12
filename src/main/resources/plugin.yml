@@ -1,0 +1,11 @@
+name: jTeams
+main: me.jack.jteams.Teams
+version: 1.0
+author: ReallyJack
+commands:
+  join:
+  invite:
+  leave:
+  create:
+  kick:
+  removerogue:
