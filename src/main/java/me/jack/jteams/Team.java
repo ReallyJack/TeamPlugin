@@ -61,7 +61,6 @@ public class Team {
         subTeams.remove(subTeam);
     }
 
-
     public Location getSpawn() {
         return spawn;
     }

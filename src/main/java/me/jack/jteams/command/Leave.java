@@ -6,6 +6,7 @@ import me.jack.jteams.TeamMember;
 import me.jack.jteams.Teams;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -28,6 +29,11 @@ public class Leave implements CommandExecutor {
 
                 if (args.length > 0) {
                     player.sendMessage(ChatColor.RED + "Incorrect usage!");
+                    return true;
+                }
+
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.sendMessage(ChatColor.RED + "You have died and are not in this event!");
                     return true;
                 }
 

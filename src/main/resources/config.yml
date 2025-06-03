@@ -16,7 +16,7 @@ team:
   'BLUE':
     name: BLUE
     color: '1'
-    members: []
+    members: {}
     subteams: {}
     spawn-location:
       x: 0.0

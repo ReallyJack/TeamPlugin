@@ -6,6 +6,7 @@ import me.jack.jteams.TeamMember;
 import me.jack.jteams.Teams;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,6 +28,11 @@ public class Kick implements CommandExecutor {
 
             SubTeam subTeam = instance.getPlayerSubTeam(player.getName());
 
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                player.sendMessage(ChatColor.RED + "You have died and are not in this event!");
+                return true;
+            }
+
             if (subTeam == null) {
                 player.sendMessage(ChatColor.RED + "You are not in a subteam!");
                 return true;
@@ -37,6 +43,11 @@ public class Kick implements CommandExecutor {
                 return true;
             }
 
+            if (args[0].equals(player.getName())) {
+                player.sendMessage(ChatColor.RED + "You can not kick yourself!");
+                return true;
+            }
+
             SubTeam targetSubTeam = instance.getPlayerSubTeam(args[0]);
 
             if (targetSubTeam == null || !targetSubTeam.getName().equals(subTeam.getName())) {
@@ -44,11 +55,11 @@ public class Kick implements CommandExecutor {
                 return true;
             }
 
-            subTeam.removeMember(subTeam.getMember(args[0]));
-            player.sendMessage(args[0] + " has been removed from the subteam!");
-
             Player target = Bukkit.getPlayer(args[0]);
             Team targetTeam = instance.getPlayerTeam(args[0]);
+
+            subTeam.removeMember(subTeam.getMember(args[0]));
+            player.sendMessage(args[0] + " has been removed from the subteam!");
 
             if (target != null) {
                 targetTeam.clearPlayerPrefix(target);

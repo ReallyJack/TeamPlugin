@@ -5,6 +5,7 @@ import me.jack.jteams.Team;
 import me.jack.jteams.TeamMember;
 import me.jack.jteams.Teams;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,6 +26,11 @@ public class Create implements CommandExecutor {
 
             if (sender instanceof Player) {
                 Player player = (Player) sender;
+
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.sendMessage(ChatColor.RED + "You have died and are not in this event!");
+                    return true;
+                }
 
                 if (args.length > 1) {
                     player.sendMessage("Subteam names can not have spaces!");

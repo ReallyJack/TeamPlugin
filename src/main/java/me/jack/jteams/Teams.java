@@ -2,16 +2,21 @@ package me.jack.jteams;
 
 import me.jack.jteams.command.*;
 import me.jack.jteams.event.PlayerDamage;
+import me.jack.jteams.event.PlayerDeath;
 import me.jack.jteams.event.PlayerJoin;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import me.jack.jteams.event.PlayerRespawn;
+import org.bukkit.*;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Teams extends JavaPlugin implements CommandExecutor {
 
@@ -20,6 +25,9 @@ public class Teams extends JavaPlugin implements CommandExecutor {
     public List<Team> teams;
 
     public int cooldown_time;
+    public boolean hardcore_mode;
+
+    int loop_counter = 0;
 
     @Override
     public void onEnable() {
@@ -29,11 +37,13 @@ public class Teams extends JavaPlugin implements CommandExecutor {
         getCommand("invite").setExecutor(new Invite(this));
         getCommand("join").setExecutor(new Join(this));
         getCommand("leave").setExecutor(new Leave(this));
-        getCommand("kick").setExecutor(new Kick(this));
+        getCommand("teamkick").setExecutor(new Kick(this));
         getCommand("removerogue").setExecutor(new RemoveRogue(this));
 
         getServer().getPluginManager().registerEvents(new PlayerJoin(this), this);
         getServer().getPluginManager().registerEvents(new PlayerDamage(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerDeath(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerRespawn(this), this);
 
         saveDefaultConfig();
 
@@ -44,9 +54,9 @@ public class Teams extends JavaPlugin implements CommandExecutor {
         ConfigurationSection settingsSection = getConfig().getConfigurationSection("settings");
 
         cooldown_time = settingsSection.getInt("cooldown-time");
+        hardcore_mode = settingsSection.getBoolean("hardcore");
 
         ConfigurationSection topTeamSection = getConfig().getConfigurationSection("team");
-
 
         Set<String> keys = topTeamSection.getKeys(false);
 
@@ -55,6 +65,7 @@ public class Teams extends JavaPlugin implements CommandExecutor {
 
             String name = currentTeamSection.getString("name");
             ChatColor color = ChatColor.getByChar(currentTeamSection.getString("color"));
+
             double x = currentTeamSection.getDouble("spawn-location.x");
             double y = currentTeamSection.getDouble("spawn-location.y");
             double z = currentTeamSection.getDouble("spawn-location.z");
@@ -65,50 +76,79 @@ public class Teams extends JavaPlugin implements CommandExecutor {
 
             Team team = new Team(name, color, location);
 
+            loop_counter++;
             teams.add(team);
 
             List<String> members = currentTeamSection.getStringList("members");
 
+            Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+
+            org.bukkit.scoreboard.Team scoreboardTeam = scoreboard.getTeam(name);
+
+            if (scoreboardTeam == null) {
+
+                scoreboardTeam = scoreboard.registerNewTeam(team.getName() + ".scoreboard");
+
+            }
+            
             for (String member : members) {
                 team.addPlayerToTeam(member);
+
+                scoreboardTeam.addEntry(member);
+                scoreboardTeam.setColor(color);
+                scoreboardTeam.setDisplayName(color + member);
             }
 
         }
 
+        loop_counter = 0;
+
+
         for (Team team : teams) {
+
+
+
+            loop_counter++;
             ConfigurationSection currentTeamSection = topTeamSection.getConfigurationSection(team.getName());
+
 
             ConfigurationSection subTeamSection = currentTeamSection.getConfigurationSection("subteams");
 
-            if (subTeamSection != null) {
+            if (subTeamSection == null) continue;
 
-                for (String subTeamName : subTeamSection.getKeys(false)) {
+            for (String subTeamName : subTeamSection.getKeys(false)) {
 
-                    SubTeam subTeam = new SubTeam(subTeamName, team.getColor());
-                    team.createSubTeam(subTeam);
+                SubTeam subTeam = new SubTeam(subTeamName, team.getColor());
+                team.createSubTeam(subTeam);
 
-                    List<String> subTeamMembers = subTeamSection.getStringList(subTeamName);
+                List<String> subTeamMembers = subTeamSection.getStringList(subTeamName);
 
-                    for (String m : subTeamMembers) {
-                        Team playerTeam = getPlayerTeam(m);
+                for (String m : subTeamMembers) {
+                    Team mTeam = getPlayerTeam(m);
 
-                        TeamMember teamMember = playerTeam.getTeamMember(m);
-                        subTeam.addMember(teamMember);
-                    }
+                    subTeam.addMember(mTeam.getTeamMember(m));
                 }
             }
         }
 
-        for (Player players : Bukkit.getOnlinePlayers()) {
-            Team team = getPlayerTeam(players.getName());
-            team.clearPlayerPrefix(players);
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            if (pl.getGameMode() == GameMode.SPECTATOR) {
+                pl.setGameMode(GameMode.SURVIVAL);
 
-            players.teleport(team.getSpawn());
+            }
 
-            SubTeam subTeam = getPlayerSubTeam(players.getName());
+            Team team = getPlayerTeam(pl.getName());
 
-            if (subTeam == null) return;
-            team.setPlayerSubTeamPrefix(players, subTeam);
+            if (team == null) continue;
+
+            team.clearPlayerPrefix(pl);
+
+            pl.teleport(team.getSpawn());
+
+            if (getPlayerSubTeam(pl.getName()) == null) continue;
+            SubTeam subTeam = getPlayerSubTeam(pl.getName());
+
+            team.setPlayerSubTeamPrefix(pl, subTeam);
 
         }
 
@@ -197,6 +237,7 @@ public class Teams extends JavaPlugin implements CommandExecutor {
     }
 
     public void makePermanentRogue(TeamMember member) {
+        member.resetTotalTeamChanges();
         permanentRogueMembers.add(member.getName());
     }
 
@@ -217,9 +258,18 @@ public class Teams extends JavaPlugin implements CommandExecutor {
     }
 
     public long getCooldownTime(String playerName) {
+        long currentTimeMillis = System.currentTimeMillis();
+        int cooldownTimeInSeconds = cooldown_time * 60;
+        long cooldownTimeSecondsToMillis = TimeUnit.SECONDS.toMillis(cooldownTimeInSeconds);
+
         for (String name : rogueMembers.keySet()) {
             if (name.equals(playerName)) {
-                return rogueMembers.get(playerName);
+                long storedTimeStamp = rogueMembers.get(playerName);
+                long elapsedTime = currentTimeMillis - storedTimeStamp;
+
+                if (elapsedTime <= cooldownTimeSecondsToMillis) {
+                    return TimeUnit.MILLISECONDS.toSeconds(cooldownTimeSecondsToMillis - elapsedTime);
+                }
             }
         }
         return 0L;
@@ -238,7 +288,6 @@ public class Teams extends JavaPlugin implements CommandExecutor {
 
     public SubTeam getPlayerSubTeam(String playerName) {
         for (Team t : teams) {
-            System.out.println(t.getName());
             for (SubTeam subTeam : t.getSubTeams()) {
                 for (TeamMember members : subTeam.getSubTeamMembers()) {
                     if (members.getName().equals(playerName)) {

@@ -6,6 +6,7 @@ import me.jack.jteams.TeamMember;
 import me.jack.jteams.Teams;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -30,6 +31,11 @@ public class Invite implements CommandExecutor {
                 return true;
             }
 
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                player.sendMessage(ChatColor.RED + "You have died and are not in this event!");
+                return true;
+            }
+
             SubTeam subTeam = instance.getPlayerSubTeam(player.getName());
 
             if (subTeam == null) {
@@ -44,7 +50,7 @@ public class Invite implements CommandExecutor {
 
             Team targetTeam = instance.getPlayerTeam(strings[0]);
 
-            if (targetTeam == null) {
+            if (targetTeam == null || Bukkit.getPlayer(strings[0]).getGameMode() == GameMode.SPECTATOR) {
                 player.sendMessage(ChatColor.RED + "Player not found!");
                 return true;
             }

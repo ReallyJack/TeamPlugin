@@ -6,6 +6,7 @@ import me.jack.jteams.TeamMember;
 import me.jack.jteams.Teams;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -28,6 +29,11 @@ public class Join implements CommandExecutor {
 
                 if (args.length > 1) {
                     System.out.println("Incorrect usage!");
+                    return true;
+                }
+
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.sendMessage(ChatColor.RED + "You have died and are not in this event!");
                     return true;
                 }
 
@@ -64,49 +70,58 @@ public class Join implements CommandExecutor {
 
                 SubTeam currentSubTeam = instance.getPlayerSubTeam(teamMember.getName());
 
-                if (currentSubTeam.getSubTeamMembers().size() > 1) {
-                    currentSubTeam.removeMember(teamMember);
-                    player.sendMessage("You have left the subteam " + subTeam.getName() + "!");
-                    teamMember.subtractTotalTeamChanges();
-                    instance.makeRogue(teamMember);
-
-                    if (teamMember.getTotalTeamChanges() == 0) {
-                        instance.makePermanentRogue(teamMember);
-                        team.setRoguePrefix(Bukkit.getPlayer(teamMember.getName()));
-                        player.sendMessage(ChatColor.RED + "You are now ROGUE and can not join any subteams!");
-                        instance.releaseRogue(teamMember);
-                        return true;
-                    }
-
-                    player.sendMessage(ChatColor.RED + "You have " + teamMember.getTotalTeamChanges() + " changes left! Warning, once you reach 0, you cannot join any more subteams! Cooldown " + instance.cooldown_time + " minutes!");
-                    team.clearPlayerPrefix(Bukkit.getPlayer(teamMember.getName()));
-
+                if (currentSubTeam == null) {
+                    subTeam.addMember(teamMember);
+                    subTeam.removeTeamInvite(teamMember);
+                    team.setPlayerSubTeamPrefix(Bukkit.getPlayer(teamMember.getName()), subTeam);
+                    //System.out.println("total team changes= " + teamMember.getTotalTeamChanges());
+                    player.sendMessage("Added to subteam " + subTeam.getName() + "!");
                 } else {
 
-                    team.removeSubTeam(currentSubTeam);
-                    currentSubTeam.removeMember(teamMember);
-                    player.sendMessage("You have left the subteam " + subTeam.getName() + "!");
-                    teamMember.subtractTotalTeamChanges();
-                    instance.makeRogue(teamMember);
+                    if (currentSubTeam.getSubTeamMembers().size() > 1) {
+                        currentSubTeam.removeMember(teamMember);
+                        player.sendMessage("You have left the subteam " + subTeam.getName() + "!");
+                        teamMember.subtractTotalTeamChanges();
+                        instance.makeRogue(teamMember);
 
-                    if (teamMember.getTotalTeamChanges() == 0) {
-                        instance.makePermanentRogue(teamMember);
-                        team.setRoguePrefix(Bukkit.getPlayer(teamMember.getName()));
-                        player.sendMessage(ChatColor.RED + "You are now ROGUE and can not join any subteams!");
-                        instance.releaseRogue(teamMember);
-                        return true;
+                        if (teamMember.getTotalTeamChanges() == 0) {
+                            instance.makePermanentRogue(teamMember);
+                            team.setRoguePrefix(Bukkit.getPlayer(teamMember.getName()));
+                            player.sendMessage(ChatColor.RED + "You are now ROGUE and can not join any subteams!");
+                            instance.releaseRogue(teamMember);
+                            return true;
+                        }
+
+                        player.sendMessage(ChatColor.RED + "You have " + teamMember.getTotalTeamChanges() + " changes left! Warning, once you reach 0, you cannot join any more subteams! Cooldown " + instance.cooldown_time + " minutes!");
+                        team.clearPlayerPrefix(Bukkit.getPlayer(teamMember.getName()));
+
+                    } else {
+
+                        team.removeSubTeam(currentSubTeam);
+                        currentSubTeam.removeMember(teamMember);
+                        player.sendMessage("You have left the subteam " + subTeam.getName() + "!");
+                        teamMember.subtractTotalTeamChanges();
+                        instance.makeRogue(teamMember);
+
+                        if (teamMember.getTotalTeamChanges() == 0) {
+                            instance.makePermanentRogue(teamMember);
+                            team.setRoguePrefix(Bukkit.getPlayer(teamMember.getName()));
+                            player.sendMessage(ChatColor.RED + "You are now ROGUE and can not join any subteams!");
+                            instance.releaseRogue(teamMember);
+                            return true;
+                        }
+
+                        team.clearPlayerPrefix(Bukkit.getPlayer(teamMember.getName()));
+                        player.sendMessage(ChatColor.RED + "You have " + teamMember.getTotalTeamChanges() + " changes left! Warning, once you reach 0, you cannot join any more subteams! Cooldown " + instance.cooldown_time + " minutes!");
+
                     }
 
-                    team.clearPlayerPrefix(Bukkit.getPlayer(teamMember.getName()));
-                    player.sendMessage(ChatColor.RED + "You have " + teamMember.getTotalTeamChanges() + " changes left! Warning, once you reach 0, you cannot join any more subteams! Cooldown " + instance.cooldown_time + " minutes!");
-
+                    subTeam.addMember(teamMember);
+                    subTeam.removeTeamInvite(teamMember);
+                    team.setPlayerSubTeamPrefix(Bukkit.getPlayer(teamMember.getName()), subTeam);
+                    //System.out.println("total team changes= " + teamMember.getTotalTeamChanges());
+                    player.sendMessage("Added to subteam " + subTeam.getName() + "!");
                 }
-
-                subTeam.addMember(teamMember);
-                subTeam.removeTeamInvite(teamMember);
-                team.setPlayerSubTeamPrefix(Bukkit.getPlayer(teamMember.getName()), subTeam);
-                //System.out.println("total team changes= " + teamMember.getTotalTeamChanges());
-                player.sendMessage("Added to subteam " + subTeam.getName() + "!");
             }
         }
         return true;
